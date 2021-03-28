@@ -10,6 +10,7 @@
 
 <script>
 import fs from 'fs'
+import path from 'path'
 
 import { app } from '@electron/remote'
 import { ref, computed } from 'vue'
@@ -17,9 +18,20 @@ import { ref, computed } from 'vue'
 export default {
   name: 'App',
   setup() {
-    const path = ref(app.getAppPath())
+    const { value: appPath } = ref(app.getAppPath())
     const files = computed(() => {
-      return fs.readdirSync(path.value)
+      // Return an array of file names
+      const fileNames = fs.readdirSync(path.value)
+
+      return fileNames.map((file) => {
+        const stats = fs.statSync(path.join(appPath, file))
+
+        return {
+          name: file,
+          size: stats.isFile() ? stats.size ?? 0 : null,
+          directory: stats.isDirectory()
+        }
+      })
     })
 
     console.info('Test leo --- show files', files.value)
@@ -28,14 +40,3 @@ export default {
   }
 }
 </script>
-
-<style lang="scss" scoped>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
-</style>
