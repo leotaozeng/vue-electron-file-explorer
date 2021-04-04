@@ -3,7 +3,7 @@
 import { app, protocol, BrowserWindow } from 'electron'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
-import electronLocalshortcut from 'electron-localshortcut'
+import localshortcut from 'electron-localshortcut'
 import Q from 'q'
 import path from 'path'
 
@@ -12,25 +12,29 @@ require('@electron/remote/main').initialize()
 const isDevelopment = process.env.NODE_ENV === 'development'
 
 class ElectronManager {
-  constructor() {
+  constructor () {
     this.win = null
   }
 
-  async loadApp(win) {
-    if (process.env.WEBPACK_DEV_SERVER_URL) {
-      // Load the url of the dev server if in development mode
-      await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
-      if (!process.env.IS_TEST) win && win.webContents.openDevTools()
-    } else {
-      createProtocol('app')
-      // Load the index.html when not in development
-      win.loadURL('app://./index.html')
-    }
+  async loadApp (win) {
+    try {
+      if (process.env.WEBPACK_DEV_SERVER_URL) {
+        // Load the url of the dev server if in development mode
+        await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
+        if (!process.env.IS_TEST) win && win.webContents.openDevTools()
+      } else {
+        createProtocol('app')
+        // Load the index.html when not in development
+        win.loadURL('app://./index.html')
+      }
 
-    win.focus()
+      win.focus()
+    } catch (e) {
+      this.handleError('Error while initializing the app:', e)
+    }
   }
 
-  init() {
+  init () {
     // Scheme must be registered before the app is ready
     protocol.registerSchemesAsPrivileged([
       { scheme: 'app', privileges: { secure: true, standard: true } }
@@ -68,7 +72,7 @@ class ElectronManager {
     }
   }
 
-  onReady() {
+  onReady () {
     Q.fcall(async () => {
       if (isDevelopment && !process.env.IS_TEST) {
         // Install Vue Devtools
@@ -93,13 +97,13 @@ class ElectronManager {
       })
   }
 
-  onActive() {
+  onActive () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) this.createWindow()
   }
 
-  createWindow() {
+  createWindow () {
     // Create the browser window.
     let win = new BrowserWindow({
       width: 800,
@@ -123,32 +127,38 @@ class ElectronManager {
     return win
   }
 
-  createShortcuts() {
-    electronLocalshortcut.register('Q', () => {
+  createShortcuts () {
+    localshortcut.register('Q', () => {
       this.closeAllWindows.apply(this)
     })
-    electronLocalshortcut.register('R', () => {
+    localshortcut.register('R', () => {
       this.reloadAllWindows.apply(this)
     })
-    electronLocalshortcut.register('D', () => {
+    localshortcut.register('D', () => {
       this.toggleDevTools.apply(this)
+    })
+    localshortcut.register('F', () => {
+      this.toggleFullscreen.apply(this)
     })
   }
 
-  closeAllWindows() {
+  closeAllWindows () {
     app.quit()
   }
 
-  reloadAllWindows() {
-    console.log(this.win)
+  reloadAllWindows () {
     this.loadApp(this.win)
   }
 
-  toggleDevTools() {
+  toggleDevTools () {
     this.win.webContents.toggleDevTools()
   }
 
-  handleError(message, e) {
+  toggleFullscreen () {
+    this.win.setFullScreen(!this.win.isFullScreen())
+  }
+
+  handleError (message, e) {
     console.error(message, e)
   }
 }
