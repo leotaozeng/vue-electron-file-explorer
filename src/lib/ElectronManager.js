@@ -2,7 +2,7 @@
 
 import { app, protocol, BrowserWindow } from 'electron'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
-import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
+import installExtension from 'electron-devtools-installer'
 import localshortcut from 'electron-localshortcut'
 import Q from 'q'
 import path from 'path'
@@ -14,24 +14,6 @@ const isDevelopment = process.env.NODE_ENV === 'development'
 class ElectronManager {
   constructor () {
     this.win = null
-  }
-
-  async loadApp (win) {
-    try {
-      if (process.env.WEBPACK_DEV_SERVER_URL) {
-        // Load the url of the dev server if in development mode
-        await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
-        if (!process.env.IS_TEST) win && win.webContents.openDevTools()
-      } else {
-        createProtocol('app')
-        // Load the index.html when not in development
-        win.loadURL('app://./index.html')
-      }
-
-      win.focus()
-    } catch (e) {
-      this.handleError('Error while initializing the app:', e)
-    }
   }
 
   init () {
@@ -72,12 +54,37 @@ class ElectronManager {
     }
   }
 
+  async loadApp (win) {
+    try {
+      if (process.env.WEBPACK_DEV_SERVER_URL) {
+        // Load the url of the dev server if in development mode
+        await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
+        if (!process.env.IS_TEST) win.webContents.openDevTools()
+      } else {
+        createProtocol('app')
+        // Load the index.html when not in development
+        win.loadURL('app://./index.html')
+      }
+
+      win.focus()
+    } catch (e) {
+      this.handleError('Error while initializing the app:', e)
+    }
+  }
+
   onReady () {
     Q.fcall(async () => {
       if (isDevelopment && !process.env.IS_TEST) {
-        // Install Vue Devtools
+        // Install the beta version of Vue Devtools
         try {
-          await installExtension(VUEJS_DEVTOOLS)
+          const vue_devtools_beta = {
+            id: 'ljjemllljcmogpfapbkkighbhhppjdbg',
+            electron: '>=1.2.1'
+          }
+          const result = await installExtension(vue_devtools_beta)
+          if (result) {
+            console.log('Success load:', result)
+          }
         } catch (e) {
           this.handleError('Vue Devtools failed to install:', e.toString())
         }
@@ -112,14 +119,16 @@ class ElectronManager {
       height: 600,
       fullscreen: true,
       useContentSize: true,
-      frame: false,
+      frame: true,
       webPreferences: {
         // Use pluginOptions.nodeIntegration, leave this alone
         // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
         nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION,
         enableRemoteModule: true,
+        webSecurity: false,
         preload: path.join(__dirname, 'preload.js')
-      }
+      },
+      show: false
     })
 
     win.on('closed', () => (win = null))
