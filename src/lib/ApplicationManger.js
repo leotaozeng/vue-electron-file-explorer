@@ -1,5 +1,5 @@
 class ApplicationManager {
-  constructor() {}
+  constructor () {}
 }
 
 export default new ApplicationManager()
