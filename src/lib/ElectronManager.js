@@ -5,6 +5,8 @@ import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension from 'electron-devtools-installer'
 import localshortcut from 'electron-localshortcut'
 import Q from 'q'
+import consola from 'consola'
+import colors from 'colors'
 import path from 'path'
 
 require('@electron/remote/main').initialize()
@@ -14,6 +16,23 @@ const isDevelopment = process.env.NODE_ENV === 'development'
 class ElectronManager {
   constructor () {
     this.win = null
+  }
+
+  async loadApp (win) {
+    try {
+      if (process.env.WEBPACK_DEV_SERVER_URL) {
+        // Load the url of the dev server if in development mode
+        await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
+        if (!process.env.IS_TEST) win.webContents.openDevTools()
+      } else {
+        createProtocol('app')
+        // Load the index.html when not in development
+        await win.loadURL('app://./index.html')
+      }
+      win.focus()
+    } catch (e) {
+      this.handleError('The app failed to initialize properly:', e)
+    }
   }
 
   init () {
@@ -54,24 +73,6 @@ class ElectronManager {
     }
   }
 
-  async loadApp (win) {
-    try {
-      if (process.env.WEBPACK_DEV_SERVER_URL) {
-        // Load the url of the dev server if in development mode
-        await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
-        if (!process.env.IS_TEST) win.webContents.openDevTools()
-      } else {
-        createProtocol('app')
-        // Load the index.html when not in development
-        win.loadURL('app://./index.html')
-      }
-
-      win.focus()
-    } catch (e) {
-      this.handleError('Error while initializing the app:', e)
-    }
-  }
-
   onReady () {
     Q.fcall(async () => {
       if (isDevelopment && !process.env.IS_TEST) {
@@ -82,8 +83,9 @@ class ElectronManager {
             electron: '>=1.2.1'
           }
           const result = await installExtension(vue_devtools_beta)
+
           if (result) {
-            console.log('Success load:', result)
+            consola.success(colors.brightGreen(`Initialize ${result} successfully`))
           }
         } catch (e) {
           this.handleError('Vue Devtools failed to install:', e.toString())
@@ -92,15 +94,13 @@ class ElectronManager {
     })
       .then(() => {
         this.win = this.createWindow()
-      })
-      .then(() => {
         this.createShortcuts()
       })
       .catch((e) => {
-        this.handleError('Error while initializing the app:', e)
+        this.handleError('The app failed to initialize properly:', e)
       })
       .done(() => {
-        console.log('Leo --- Initialize the Electron app successfully')
+        consola.success(colors.brightGreen('Initialize Electron app successfully'))
       })
   }
 
@@ -127,8 +127,7 @@ class ElectronManager {
         enableRemoteModule: true,
         webSecurity: false,
         preload: path.join(__dirname, 'preload.js')
-      },
-      show: false
+      }
     })
 
     win.on('closed', () => (win = null))
@@ -153,14 +152,6 @@ class ElectronManager {
     })
   }
 
-  closeAllWindows () {
-    app.quit()
-  }
-
-  reloadAllWindows () {
-    this.loadApp(this.win)
-  }
-
   toggleDevTools () {
     this.win.webContents.toggleDevTools()
   }
@@ -169,8 +160,16 @@ class ElectronManager {
     this.win.setFullScreen(!this.win.isFullScreen())
   }
 
+  reloadAllWindows () {
+    this.loadApp(this.win)
+  }
+
+  closeAllWindows () {
+    app.quit()
+  }
+
   handleError (message, e) {
-    console.error(message, e)
+    consola.error(colors.brightRed(message, e))
   }
 }
 
