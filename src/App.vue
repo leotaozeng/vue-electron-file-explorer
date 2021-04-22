@@ -10,7 +10,7 @@
       />
     </div>
 
-    <BaseFilesViewer :files="filteredFiles" />
+    <BaseFilesViewer :files="filteredFiles" @back="back" @folderClick="open" />
   </div>
 </template>
 
@@ -47,22 +47,22 @@ export default {
               name: fielname,
               size: stats.isFile() ? formatBytes(stats.size ?? 0) : null,
               extension: path.extname(fielname),
-              directory: stats.isDirectory()
+              isDirectory: stats.isDirectory()
             }
           })
           .sort((a, b) => {
-            if (a.directory === b.directory) {
+            if (a.isDirectory === b.isDirectory) {
               // A negative number if referenceStr occurs before compareString;
               // positive if the referenceStr occurs after compareString;
               // 0 if they are equivalent.
               return a.extension.localeCompare(b.extension)
             } else {
               // Display directories first then files
-              if (a.directory) {
+              if (a.isDirectory) {
                 return -1
               }
 
-              if (!a.directory) {
+              if (!a.isDirectory) {
                 return a.extension.localeCompare(b.extension)
               }
             }

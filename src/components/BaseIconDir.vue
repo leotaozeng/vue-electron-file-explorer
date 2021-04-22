@@ -17,5 +17,6 @@ export default {
 <style lang="scss" scoped>
 .icon-directory {
   width: 1rem;
+  margin: 0 auto;
 }
 </style>

@@ -2,7 +2,7 @@
   <div class="files-viewer mt-3">
     <table class="table align-middle">
       <tbody>
-        <tr class="header-row">
+        <tr class="header-row cursor-pointer" @click="goToParentDir">
           <td class="icon-wrapper">
             <BaseIconDirOpen />
           </td>
@@ -13,10 +13,11 @@
           v-for="file in files"
           :key="file.id"
           class="file-row"
-          :class="{ clickable: file.directory }"
+          :class="{ 'cursor-pointer': file.isDirectory, 'pointer-events-none': !file.isDirectory }"
+          @click="onFileClick(file)"
         >
           <td class="icon-wrapper">
-            <BaseIconDir v-if="file.directory" />
+            <BaseIconDir v-if="file.isDirectory" />
             <BaseIconFile v-else />
           </td>
 
@@ -34,8 +35,6 @@
 </template>
 
 <script>
-import consola from 'consola'
-
 import BaseIconDir from './BaseIconDir'
 import BaseIconDirOpen from './BaseIconDirOpen'
 import BaseIconFile from './BaseIconFile'
@@ -52,16 +51,17 @@ export default {
     }
   },
   setup (props, context) {
-    function handleClickOnFile (file) {
-      consola.info('Click on file')
-      if (file.directory) {
-        context.emit('folder-click', file)
+    function onFileClick (file) {
+      if (file.isDirectory) {
+        context.emit('folder-click', file.name)
       }
     }
 
-    return {
-      handleClickOnFile
+    function goToParentDir () {
+      context.emit('back')
     }
+
+    return { onFileClick, goToParentDir }
   }
 }
 </script>
@@ -71,12 +71,6 @@ export default {
   .header-row {
     .icon-wrapper {
       width: 2.4rem;
-    }
-  }
-
-  .file-row {
-    &.clickable {
-      cursor: pointer;
     }
   }
 }
