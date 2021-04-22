@@ -4,8 +4,8 @@ import { app, protocol, BrowserWindow } from 'electron'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension from 'electron-devtools-installer'
 import localshortcut from 'electron-localshortcut'
+import { success, error } from 'consola'
 import Q from 'q'
-import consola from 'consola'
 import colors from 'colors'
 import path from 'path'
 
@@ -18,12 +18,15 @@ class ElectronManager {
     this.win = null
   }
 
-  async loadApp (win) {
+  async loadFrontApp (win) {
+    // Load Vue.js in a separate process
     try {
       if (process.env.WEBPACK_DEV_SERVER_URL) {
         // Load the url of the dev server if in development mode
         await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
-        if (!process.env.IS_TEST) win.webContents.openDevTools()
+        if (!process.env.IS_TEST) {
+          win && win.webContents.openDevTools()
+        }
       } else {
         createProtocol('app')
         // Load the index.html when not in development
@@ -31,7 +34,7 @@ class ElectronManager {
       }
       win.focus()
     } catch (e) {
-      this.handleError('The app failed to initialize properly:', e)
+      this.handleError('The app failed to load properly:', e)
     }
   }
 
@@ -44,7 +47,7 @@ class ElectronManager {
     // This method will be called when Electron has finished
     // initialization and is ready to create browser windows.
     // Some APIs can only be used after this event occurs.
-    app.on('ready', () => {
+    app.whenReady().then(() => {
       this.onReady.apply(this)
     })
 
@@ -85,7 +88,7 @@ class ElectronManager {
           const result = await installExtension(vue_devtools_beta)
 
           if (result) {
-            consola.success(colors.brightGreen(`Initialize ${result} successfully`))
+            success(colors.brightGreen(`Initialize ${result} successfully`))
           }
         } catch (e) {
           this.handleError('Vue Devtools failed to install:', e.toString())
@@ -100,7 +103,7 @@ class ElectronManager {
         this.handleError('The app failed to initialize properly:', e)
       })
       .done(() => {
-        consola.success(colors.brightGreen('Initialize Electron app successfully'))
+        success(colors.brightGreen('Initialize Electron app successfully'))
       })
   }
 
@@ -112,8 +115,12 @@ class ElectronManager {
     }
   }
 
+  handleError (message, e) {
+    error(message, e)
+  }
+
   createWindow () {
-    // Create the browser window.
+    // Create a browser window
     let win = new BrowserWindow({
       width: 800,
       height: 600,
@@ -132,7 +139,7 @@ class ElectronManager {
 
     win.on('closed', () => (win = null))
 
-    this.loadApp(win)
+    this.loadFrontApp(win)
 
     return win
   }
@@ -152,24 +159,20 @@ class ElectronManager {
     })
   }
 
-  toggleDevTools () {
-    this.win.webContents.toggleDevTools()
-  }
-
-  toggleFullscreen () {
-    this.win.setFullScreen(!this.win.isFullScreen())
-  }
-
   reloadAllWindows () {
-    this.loadApp(this.win)
+    this.loadFrontApp(this.win)
   }
 
   closeAllWindows () {
     app.quit()
   }
 
-  handleError (message, e) {
-    consola.error(colors.brightRed(message, e))
+  toggleDevTools () {
+    this.win.webContents.toggleDevTools()
+  }
+
+  toggleFullscreen () {
+    this.win.setFullScreen(!this.win.isFullScreen())
   }
 }
 
