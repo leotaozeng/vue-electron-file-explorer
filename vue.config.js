@@ -4,9 +4,10 @@ module.exports = {
   configureWebpack: {
     resolve: {
       alias: {
-        "@": path.resolve(__dirname, 'src/'),
+        "@": path.resolve(__dirname, 'src'),
         "@c": path.resolve(__dirname, 'src/component'),
-        "@l": path.resolve(__dirname, 'src/lib')
+        "@l": path.resolve(__dirname, 'src/lib'),
+        "@s": path.resolve(__dirname, 'src/store')
       }
     }
   },

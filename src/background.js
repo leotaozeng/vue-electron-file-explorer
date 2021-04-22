@@ -1,12 +1,12 @@
 'use strict'
 
-/**
- * Electron entry file(for Electron's main process)
- */
 import _ from 'lodash'
 import { app, powerSaveBlocker } from 'electron'
 import ElectronManager from '@/lib/ElectronManager'
 
+/**
+ * Electron entry file(for Electron's main process)
+ */
 const id = powerSaveBlocker.start('prevent-display-sleep')
 console.log(powerSaveBlocker.isStarted(id))
 const cmdLineOptions = [
