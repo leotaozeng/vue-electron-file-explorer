@@ -27,7 +27,7 @@ import BaseFilesViewer from '@c/BaseFilesViewer'
 
 export default {
   name: 'App',
-  components: {BaseFilesViewer},
+  components: { BaseFilesViewer },
   setup () {
     // Returns String - The current application directory
     const appPath = ref(app.getAppPath())
@@ -52,10 +52,10 @@ export default {
           })
           .sort((a, b) => {
             if (a.directory === b.directory) {
-              // A negative number if referenceStr occurs before compareString; 
-              // positive if the referenceStr occurs after compareString; 
+              // A negative number if referenceStr occurs before compareString;
+              // positive if the referenceStr occurs after compareString;
               // 0 if they are equivalent.
-              return a.name.localeCompare(b.name)
+              return a.extension.localeCompare(b.extension)
             } else {
               // Display directories first then files
               if (a.directory) {
@@ -63,13 +63,13 @@ export default {
               }
 
               if (!a.directory) {
-                return a.name.localeCompare(b.name)
+                return a.extension.localeCompare(b.extension)
               }
             }
           })
       } catch (e) {
         error(e)
-        return false
+        return []
       }
 
       return results
@@ -80,7 +80,6 @@ export default {
           ? file.name.startsWith(searchString.value)
           : files.value
       })
-
       return results
     })
     info(files.value)
