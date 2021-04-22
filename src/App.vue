@@ -82,6 +82,7 @@ export default {
       })
       return results
     })
+    
     info(files.value)
     function formatBytes (bytes, decimals = 2) {
       if (bytes === 0) return '0 Bytes'
