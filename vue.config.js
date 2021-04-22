@@ -5,9 +5,10 @@ module.exports = {
     resolve: {
       alias: {
         "@": path.resolve(__dirname, 'src'),
-        "@c": path.resolve(__dirname, 'src/components'),
         "@l": path.resolve(__dirname, 'src/lib'),
-        "@s": path.resolve(__dirname, 'src/store')
+        "@a": path.resolve(__dirname, 'src/assets'),
+        "@s": path.resolve(__dirname, 'src/store'),
+        "@c": path.resolve(__dirname, 'src/components')
       }
     }
   },

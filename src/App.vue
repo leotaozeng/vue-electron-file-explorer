@@ -1,6 +1,6 @@
 <template>
   <div class="container mt-5">
-    <h4>{{ appPath }}</h4>
+    <h4>Current Path: {{ appPath }}</h4>
 
     <div class="form-group mt-4 mb-2">
       <input
@@ -9,45 +9,81 @@
         placeholder="File search"
       />
     </div>
+
+    <BaseFilesViewer :files="filteredFiles" />
   </div>
 </template>
 
 <script>
-import fs from 'fs-extra'
+import fs from 'fs'
 import path from 'path'
 
 import { app } from '@electron/remote'
+import { v4 as uuidv4 } from 'uuid'
+import { info, error } from 'consola'
 import { ref, computed } from 'vue'
+
+import BaseFilesViewer from '@c/BaseFilesViewer'
 
 export default {
   name: 'App',
+  components: {BaseFilesViewer},
   setup () {
-    const appPath = ref(app.getAppPath()) // Returns String - The current application directory
+    // Returns String - The current application directory
+    const appPath = ref(app.getAppPath())
     const searchString = ref('')
 
     const files = computed(() => {
-      const arrayFileNames = fs.readdirSync(appPath.value) // Return an array of file names for all the files and directories in a given path
-      const result = arrayFileNames.map((file) => {
-        const stats = fs.statSync(path.join(appPath.value, file))
+      let results = null
 
-        return {
-          name: file,
-          size: stats.isFile() ? stats.size ?? 0 : null,
-          directory: stats.isDirectory()
-        }
-      })
+      try {
+        // Return an array of file names for all the files and directories in a given path
+        const filenames = fs.readdirSync(appPath.value)
+        results = filenames
+          .map(fielname => {
+            const stats = fs.statSync(path.join(appPath.value, fielname))
+            return {
+              id: uuidv4(),
+              name: fielname,
+              size: stats.isFile() ? formatBytes(stats.size ?? 0) : null,
+              extension: path.extname(fielname),
+              directory: stats.isDirectory()
+            }
+          })
+          .sort((a, b) => {
+            if (a.directory === b.directory) {
+              // A negative number if referenceStr occurs before compareString; 
+              // positive if the referenceStr occurs after compareString; 
+              // 0 if they are equivalent.
+              return a.name.localeCompare(b.name)
+            } else {
+              // Display directories first then files
+              if (a.directory) {
+                return -1
+              }
 
-      return result
+              if (!a.directory) {
+                return a.name.localeCompare(b.name)
+              }
+            }
+          })
+      } catch (e) {
+        error(e)
+        return false
+      }
+
+      return results
     })
-    console.info('Files:', files.value)
     const filteredFiles = computed(() => {
-      const result = files.value.filter((file) => {
-        return searchString.value ? file.name.startsWith(searchString.value) : files.value
+      const results = files.value.filter(file => {
+        return searchString.value
+          ? file.name.startsWith(searchString.value)
+          : files.value
       })
 
-      return result
+      return results
     })
-
+    info(files.value)
     function formatBytes (bytes, decimals = 2) {
       if (bytes === 0) return '0 Bytes'
 
@@ -69,10 +105,10 @@ export default {
     }
 
     return {
-      appPath,
       files,
       filteredFiles,
       searchString,
+      appPath,
 
       open,
       back,
